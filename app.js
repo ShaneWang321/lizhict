@@ -49,8 +49,9 @@ const UI = {
     iconCall: document.getElementById("icon-call"),
     iconHangup: document.getElementById("icon-hangup"),
     remoteIdentity: document.getElementById("remote-identity"),
-    modal: document.getElementById("settings-modal"),
     form: document.getElementById("settings-form"),
+    gear: document.getElementById("open-settings"),
+    title: document.getElementById("app-title"),
 
     updateStatus(text, className = "") {
         this.statusBadge.innerText = text;
@@ -69,11 +70,22 @@ const UI = {
             this.iconHangup.style.display = "none";
             this.remoteIdentity.innerText = "";
         }
+
+        // Disable button during transitions (INITIALIZING or CLEANING)
+        const state = app ? app.state : null;
+        this.callBtn.disabled = (state === AppStatus.INITIALIZING || state === AppStatus.CLEANING);
+        this.callBtn.style.opacity = this.callBtn.disabled ? "0.5" : "1";
+        this.callBtn.style.cursor = this.callBtn.disabled ? "not-allowed" : "pointer";
+
         // DTMF UI handling
         const dtmfPad = document.getElementById("dtmf-pad");
         if (dtmfPad) {
-            dtmfPad.style.display = isInCall ? "grid" : "none";
+            dtmfPad.style.display = (isInCall && state === AppStatus.IN_CALL) ? "grid" : "none";
         }
+    },
+
+    toggleGear(show) {
+        this.gear.style.display = show ? "flex" : "none";
     },
 
     showModal() { this.modal.style.display = "flex"; },
@@ -200,6 +212,7 @@ class JanusSIP {
 
         this.state = AppStatus.IDLE;
         this.hangupTimeoutId = null;
+        this.clickCount = 0;
     }
 
     async getTurnCredentials() {
@@ -264,6 +277,12 @@ class JanusSIP {
 
             const turnCreds = await this.getTurnCredentials();
 
+            // Guard: If we are no longer initializing (e.g. user hung up during await)
+            if (this.state !== AppStatus.INITIALIZING) {
+                console.warn("Start aborted: state changed during credential fetch");
+                return;
+            }
+
             let iceServers = [];
             try {
                 const configuredUrls = JSON.parse(this.settings.turnUrls || "[]");
@@ -314,8 +333,11 @@ class JanusSIP {
                     this.cleanup();
                 },
                 destroyed: () => {
-                    console.log("Janus destroyed");
-                    this.cleanup();
+                    console.log("Janus destroyed event");
+                    // Only cleanup if we haven't already started a cleaning process
+                    if (this.state !== AppStatus.CLEANING && this.state !== AppStatus.IDLE) {
+                        this.cleanup();
+                    }
                 }
             });
         } catch (e) {
@@ -338,15 +360,25 @@ class JanusSIP {
                 alert(error);
             },
             iceState: (state) => {
+                if (this.state === AppStatus.CLEANING || this.state === AppStatus.IDLE) {
+                    console.log(`[ICE State] ${state} (ignored during cleanup)`);
+                    return;
+                }
+
                 console.log(`%c[ICE State] ${state}`, "color: blue; font-weight: bold");
                 if (state === "failed") {
                     UI.updateStatus("ICE 連線失敗", "danger");
                     this.cleanup(true);
                 } else if (state === "disconnected") {
-                    console.warn("ICE disconnected, waiting for reconnection...");
+                    if (this.state === AppStatus.IN_CALL) {
+                        console.warn("ICE disconnected, waiting for reconnection...");
+                    } else {
+                        console.log("ICE disconnected during setup/hangup");
+                    }
                 }
             },
             onmessage: (msg, jsep) => {
+                if (this.state === AppStatus.CLEANING || this.state === AppStatus.IDLE) return;
                 this.handleMessage(msg, jsep);
             },
             onlocalstream: (stream) => {
@@ -359,6 +391,7 @@ class JanusSIP {
                 }
             },
             onremotestream: (stream) => {
+                if (this.state === AppStatus.CLEANING || this.state === AppStatus.IDLE) return;
                 console.log("Got remote stream");
                 const audio = document.getElementById("remote-audio");
 
@@ -590,6 +623,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("open-settings").onclick = () => UI.showModal();
     document.getElementById("close-settings").onclick = () => UI.hideModal();
     UI.callBtn.onclick = () => app.start();
+
+    // Secret trigger for settings
+    UI.title.onclick = () => {
+        app.clickCount++;
+        if (app.clickCount >= 5) {
+            UI.toggleGear(true);
+            UI.updateStatus("隱藏設定已開啟", "registered");
+        }
+    };
 
     UI.form.onsubmit = (e) => {
         e.preventDefault();
