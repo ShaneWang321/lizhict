@@ -495,6 +495,8 @@ class JanusSIP {
                         console.log("Handling JSEP for " + result.event);
                         this.sipHandle.handleRemoteJsep({ jsep, error: () => this.hangup() });
                     }
+                    // Fix: Set isCalling to true so DTMF works
+                    this.isCalling = true;
                     break;
                 case "unregistered":
                 case "hangup":
@@ -564,7 +566,11 @@ class JanusSIP {
     }
 
     sendDTMF(digit) {
-        if (!this.sipHandle || !this.isCalling) return;
+        // Fix: Use state check as the primary guard for DTMF
+        if (!this.sipHandle || this.state !== AppStatus.IN_CALL) {
+            console.warn("DTMF ignored: Not in a call state");
+            return;
+        }
         console.log("Sending DTMF:", digit);
         this.sipHandle.dtmf({
             dtmf: {
