@@ -494,9 +494,20 @@ class JanusSIP {
                 this.sipHandle.send({ message: { request: "hangup" } });
             } catch (e) {
                 console.warn("Hangup send failed (session might be gone):", e);
+                // If we can't send hangup, we should probably cleanup immediately
+                this.cleanup();
+                return;
             }
         }
-        this.cleanup();
+
+        // Don't cleanup immediately. Wait for the 'hangup' event from the server.
+        // Set a timeout to force cleanup if the server doesn't respond.
+        setTimeout(() => {
+            if (this.isCalling || this.isRegistered) {
+                console.warn("Hangup timeout, forcing cleanup");
+                this.cleanup();
+            }
+        }, 2000);
     }
 
     sendDTMF(digit) {
