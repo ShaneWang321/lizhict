@@ -605,6 +605,9 @@ class JanusSIP {
         this.isCalling = false;
         this.isRegistered = false;
 
+        // Reset UI immediately to show the "Call" icon but STAY in CLEANING state (Gray/Disabled)
+        UI.setCallState(false);
+
         // Cooldown timer: 3 seconds before allowing next call
         const cooldownMs = 3000;
 
