@@ -153,6 +153,9 @@ Janus.useDefaultDependencies = function (deps) {
 					if (response.status === 404 || response.status === 410) {
 						// Suppress 404 during session destruction
 						return;
+					} else if (options.longpoll && response.status === 408) {
+						// Suppress 408 for long-poll
+						return;
 					}
 					return p.reject({ message: 'API call failed', response: response });
 				}

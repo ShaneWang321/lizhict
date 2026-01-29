@@ -406,6 +406,7 @@ class JanusSIP {
                             if (this.state !== AppStatus.CLEANING) {
                                 this.state = AppStatus.IN_CALL;
                                 UI.updateStatus(this.isRegistered ? "通話中" : "已接聽", "incall");
+                                UI.setCallState(true); // Refresh UI to show DTMF pad
                             }
                         }).catch(e => {
                             if (e.name !== "AbortError") {
@@ -497,6 +498,10 @@ class JanusSIP {
                     }
                     // Fix: Set isCalling to true so DTMF works
                     this.isCalling = true;
+                    if (result.event === "accepted") {
+                        this.state = AppStatus.IN_CALL;
+                        UI.setCallState(true);
+                    }
                     break;
                 case "unregistered":
                 case "hangup":
@@ -599,7 +604,9 @@ class JanusSIP {
 
         this.isCalling = false;
         this.isRegistered = false;
-        // Move UI update to the end of the state transition to ensure unlock works correctly
+
+        // Cooldown timer: 3 seconds before allowing next call
+        const cooldownMs = 3000;
 
         if (this.janus && !isSoft) {
             const j = this.janus;
@@ -607,21 +614,28 @@ class JanusSIP {
             this.sipHandle = null;
             j.destroy({
                 success: () => {
-                    console.log("Janus destroyed successfully");
-                    this.state = AppStatus.IDLE;
-                    UI.setCallState(false);
+                    console.log(`Janus destroyed. Starting ${cooldownMs}ms silent cooldown...`);
+                    setTimeout(() => {
+                        this.state = AppStatus.IDLE;
+                        UI.setCallState(false);
+                        console.log("Cooldown finished, ready for next call.");
+                    }, cooldownMs);
                 },
                 error: (e) => {
-                    console.error("Error destroying Janus:", e);
+                    console.error("Error destroying Janus, skipping cooldown:", e);
                     this.state = AppStatus.IDLE;
                     UI.setCallState(false);
                 }
             });
         } else if (!isSoft) {
-            this.state = AppStatus.IDLE;
-            UI.setCallState(false);
+            console.log(`Direct cleanup. Starting ${cooldownMs}ms silent cooldown...`);
+            setTimeout(() => {
+                this.state = AppStatus.IDLE;
+                UI.setCallState(false);
+            }, cooldownMs);
         } else {
-            // isSoft case
+            // isSoft case: Immediate unlock (usually for internal errors)
+            this.state = AppStatus.IDLE;
             UI.setCallState(false);
         }
     }
