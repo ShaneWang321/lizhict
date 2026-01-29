@@ -655,8 +655,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("close-settings").onclick = () => UI.hideModal();
     UI.callBtn.onclick = () => app.start();
 
-    // Secret trigger for settings
+    // Secret trigger for settings (Title)
     UI.title.onclick = () => {
+        app.clickCount++;
+        if (app.clickCount >= 5) {
+            UI.toggleGear(true);
+            UI.updateStatus("隱藏設定已開啟", "registered");
+        }
+    };
+
+    // Secret trigger for settings (Status Badge)
+    UI.statusBadge.onclick = () => {
         app.clickCount++;
         if (app.clickCount >= 5) {
             UI.toggleGear(true);
