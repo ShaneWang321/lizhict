@@ -593,7 +593,7 @@ class JanusSIP {
 
         this.isCalling = false;
         this.isRegistered = false;
-        UI.setCallState(false);
+        // Move UI update to the end of the state transition to ensure unlock works correctly
 
         if (this.janus && !isSoft) {
             const j = this.janus;
@@ -603,14 +603,20 @@ class JanusSIP {
                 success: () => {
                     console.log("Janus destroyed successfully");
                     this.state = AppStatus.IDLE;
+                    UI.setCallState(false);
                 },
                 error: (e) => {
                     console.error("Error destroying Janus:", e);
                     this.state = AppStatus.IDLE;
+                    UI.setCallState(false);
                 }
             });
         } else if (!isSoft) {
             this.state = AppStatus.IDLE;
+            UI.setCallState(false);
+        } else {
+            // isSoft case
+            UI.setCallState(false);
         }
     }
 }
