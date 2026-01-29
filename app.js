@@ -92,6 +92,10 @@ const UI = {
         this.gear.style.display = show ? "flex" : "none";
     },
 
+    toggleStatusBadge(show) {
+        this.statusBadge.style.display = show ? "inline-block" : "none";
+    },
+
     showModal() { this.modal.style.display = "flex"; },
     hideModal() { this.modal.style.display = "none"; },
 
@@ -660,6 +664,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         app.clickCount++;
         if (app.clickCount >= 5) {
             UI.toggleGear(true);
+            UI.toggleStatusBadge(true); // Reveal status badge
             UI.updateStatus("隱藏設定已開啟", "registered");
         }
     };
@@ -669,6 +674,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         app.clickCount++;
         if (app.clickCount >= 5) {
             UI.toggleGear(true);
+            UI.toggleStatusBadge(true); // Reveal status badge
             UI.updateStatus("隱藏設定已開啟", "registered");
         }
     };
