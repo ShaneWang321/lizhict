@@ -49,6 +49,7 @@ const UI = {
     iconCall: document.getElementById("icon-call"),
     iconHangup: document.getElementById("icon-hangup"),
     remoteIdentity: document.getElementById("remote-identity"),
+    modal: document.getElementById("settings-modal"),
     form: document.getElementById("settings-form"),
     gear: document.getElementById("open-settings"),
     title: document.getElementById("app-title"),
@@ -71,15 +72,18 @@ const UI = {
             this.remoteIdentity.innerText = "";
         }
 
-        // Disable button during transitions (INITIALIZING or CLEANING)
+        // Smarter UI Locking:
+        // ONLY disable the button during CLEANING.
+        // During INITIALIZING, we keep it enabled so the user can "Cancel" (hangup).
         const state = app ? app.state : null;
-        this.callBtn.disabled = (state === AppStatus.INITIALIZING || state === AppStatus.CLEANING);
+        this.callBtn.disabled = (state === AppStatus.CLEANING);
         this.callBtn.style.opacity = this.callBtn.disabled ? "0.5" : "1";
         this.callBtn.style.cursor = this.callBtn.disabled ? "not-allowed" : "pointer";
 
         // DTMF UI handling
         const dtmfPad = document.getElementById("dtmf-pad");
         if (dtmfPad) {
+            // Only show DTMF when actually IN_CALL
             dtmfPad.style.display = (isInCall && state === AppStatus.IN_CALL) ? "grid" : "none";
         }
     },
@@ -277,9 +281,9 @@ class JanusSIP {
 
             const turnCreds = await this.getTurnCredentials();
 
-            // Guard: If we are no longer initializing (e.g. user hung up during await)
+            // Async Guard: Check if user hung up while we were fetching credentials
             if (this.state !== AppStatus.INITIALIZING) {
-                console.warn("Start aborted: state changed during credential fetch");
+                console.warn("Start aborted: user cancelled during credential fetch");
                 return;
             }
 
@@ -334,7 +338,7 @@ class JanusSIP {
                 },
                 destroyed: () => {
                     console.log("Janus destroyed event");
-                    // Only cleanup if we haven't already started a cleaning process
+                    // Guard against redundant cleanup
                     if (this.state !== AppStatus.CLEANING && this.state !== AppStatus.IDLE) {
                         this.cleanup();
                     }
@@ -364,16 +368,14 @@ class JanusSIP {
                     console.log(`[ICE State] ${state} (ignored during cleanup)`);
                     return;
                 }
-
                 console.log(`%c[ICE State] ${state}`, "color: blue; font-weight: bold");
                 if (state === "failed") {
                     UI.updateStatus("ICE 連線失敗", "danger");
                     this.cleanup(true);
                 } else if (state === "disconnected") {
+                    // Only log "waiting for reconnection" if we aren't cleaning up
                     if (this.state === AppStatus.IN_CALL) {
                         console.warn("ICE disconnected, waiting for reconnection...");
-                    } else {
-                        console.log("ICE disconnected during setup/hangup");
                     }
                 }
             },

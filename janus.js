@@ -151,8 +151,7 @@ Janus.useDefaultDependencies = function (deps) {
 				}
 				else {
 					if (response.status === 404 || response.status === 410) {
-						// Most likely session or handle was destroyed: ignore if we're cleaning up
-						Janus.warn("Long-poll 404/410 (Session gone), suppression applied.");
+						// Suppress 404 during session destruction
 						return;
 					}
 					return p.reject({ message: 'API call failed', response: response });
