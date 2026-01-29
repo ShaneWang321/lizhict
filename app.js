@@ -175,6 +175,14 @@ const DTMFToneGenerator = {
     }
 };
 
+// --- App States ---
+const AppStatus = {
+    IDLE: "IDLE",
+    INITIALIZING: "INITIALIZING",
+    IN_CALL: "IN_CALL",
+    CLEANING: "CLEANING"
+};
+
 // --- Janus SIP Class ---
 class JanusSIP {
     constructor() {
@@ -189,6 +197,9 @@ class JanusSIP {
         this.sipIdentity = null;
         this.sipUsername = null;
         this.sipDisplayName = null;
+
+        this.state = AppStatus.IDLE;
+        this.hangupTimeoutId = null;
     }
 
     async getTurnCredentials() {
@@ -215,13 +226,18 @@ class JanusSIP {
 
     async start() {
         try {
-            if (this.isCalling) {
+            if (this.state === AppStatus.CLEANING) {
+                console.warn("Still cleaning up previous session, please wait...");
+                return;
+            }
+
+            if (this.state !== AppStatus.IDLE) {
                 console.log("Call in progress, hanging up...");
                 this.hangup();
                 return;
             }
 
-            this.isCalling = true;
+            this.state = AppStatus.INITIALIZING;
             UI.setCallState(true);
             UI.updateStatus("正在獲取憑證...", "calling");
 
@@ -352,7 +368,10 @@ class JanusSIP {
                     setTimeout(() => {
                         audio.play().then(() => {
                             console.log("Remote audio playing successfully");
-                            UI.updateStatus(this.isRegistered ? "通話中" : "已接聽", "incall");
+                            if (this.state !== AppStatus.CLEANING) {
+                                this.state = AppStatus.IN_CALL;
+                                UI.updateStatus(this.isRegistered ? "通話中" : "已接聽", "incall");
+                            }
                         }).catch(e => {
                             if (e.name !== "AbortError") {
                                 console.error("Error playing remote audio:", e);
@@ -488,25 +507,24 @@ class JanusSIP {
     }
 
     hangup() {
+        if (this.state === AppStatus.CLEANING || this.state === AppStatus.IDLE) return;
+
         UI.updateStatus("已掛斷", "");
         if (this.sipHandle) {
             try {
                 this.sipHandle.send({ message: { request: "hangup" } });
             } catch (e) {
                 console.warn("Hangup send failed (session might be gone):", e);
-                // If we can't send hangup, we should probably cleanup immediately
                 this.cleanup();
                 return;
             }
         }
 
-        // Don't cleanup immediately. Wait for the 'hangup' event from the server.
         // Set a timeout to force cleanup if the server doesn't respond.
-        setTimeout(() => {
-            if (this.isCalling || this.isRegistered) {
-                console.warn("Hangup timeout, forcing cleanup");
-                this.cleanup();
-            }
+        if (this.hangupTimeoutId) clearTimeout(this.hangupTimeoutId);
+        this.hangupTimeoutId = setTimeout(() => {
+            console.warn("Hangup timeout, forcing cleanup");
+            this.cleanup();
         }, 2000);
     }
 
@@ -521,7 +539,16 @@ class JanusSIP {
     }
 
     cleanup(isSoft = false) {
-        if (!this.janus && !this.isCalling) return;
+        if (this.state === AppStatus.CLEANING && !isSoft) return;
+        if (this.state === AppStatus.IDLE && !this.janus) return;
+
+        console.log(`Cleaning up (soft: ${isSoft})`);
+        if (!isSoft) this.state = AppStatus.CLEANING;
+
+        if (this.hangupTimeoutId) {
+            clearTimeout(this.hangupTimeoutId);
+            this.hangupTimeoutId = null;
+        }
 
         if (this.localStream) {
             console.log("Stopping local stream tracks");
@@ -529,7 +556,6 @@ class JanusSIP {
             this.localStream = null;
         }
 
-        console.log(`Cleaning up (soft: ${isSoft})`);
         this.isCalling = false;
         this.isRegistered = false;
         UI.setCallState(false);
@@ -537,7 +563,19 @@ class JanusSIP {
         if (this.janus && !isSoft) {
             const j = this.janus;
             this.janus = null;
-            j.destroy();
+            this.sipHandle = null;
+            j.destroy({
+                success: () => {
+                    console.log("Janus destroyed successfully");
+                    this.state = AppStatus.IDLE;
+                },
+                error: (e) => {
+                    console.error("Error destroying Janus:", e);
+                    this.state = AppStatus.IDLE;
+                }
+            });
+        } else if (!isSoft) {
+            this.state = AppStatus.IDLE;
         }
     }
 }
