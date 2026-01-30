@@ -2,7 +2,7 @@
 
 // --- Settings Management ---
 const DEFAULTS = {
-    janusServer: "https://www.vas.com.tw/janus",
+    janusServer: "https://test1.sokebot.com/janus",
     userID: "user",
     sipRegistrar: "",
     sipIdentity: "",
@@ -10,9 +10,9 @@ const DEFAULTS = {
     sipPassword: "",
     displayName: "",
     callee: "",
-    turnAuthApi: "https://www.vas.com.tw/api/get-turn-credentials",
-    sipProxyApi: "https://www.vas.com.tw/api/sip-register",
-    turnUrls: '["turn:www.vas.com.tw:3478?transport=udp", "turn:www.vas.com.tw:3478?transport=tcp"]',
+    turnAuthApi: "https://test1.sokebot.com/api/get-turn-credentials",
+    sipProxyApi: "https://test1.sokebot.com/api/sip-register",
+    turnUrls: '["turn:test1.sokebot.com:3478?transport=udp", "turn:test1.sokebot.com:3478?transport=tcp"]',
     forceTurn: false
 };
 
