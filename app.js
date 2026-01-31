@@ -73,23 +73,20 @@ const UI = {
             this.remoteIdentity.innerText = "";
         }
 
-        // Smarter UI Locking:
-        // ONLY disable the button during CLEANING.
-        // During INITIALIZING, we keep it enabled so the user can "Cancel" (hangup).
         const state = app ? app.state : null;
         this.callBtn.disabled = (state === AppStatus.CLEANING);
-        this.callBtn.style.opacity = this.callBtn.disabled ? "0.5" : "1";
-        this.callBtn.style.cursor = this.callBtn.disabled ? "not-allowed" : "pointer";
 
         // DTMF UI handling
         const dtmfPad = document.getElementById("dtmf-pad");
+        const dtmfDisplay = document.getElementById("dtmf-display");
+
         if (dtmfPad) {
             // Only show DTMF when actually IN_CALL
             const show = (isInCall && state === AppStatus.IN_CALL);
             dtmfPad.style.display = show ? "grid" : "none";
-            if (this.dtmfDisplay) {
-                this.dtmfDisplay.style.display = show ? "block" : "none";
-                if (!show) this.dtmfDisplay.innerText = ""; // Clear on call end
+            if (dtmfDisplay) {
+                dtmfDisplay.style.display = show ? "flex" : "none";
+                if (!show) dtmfDisplay.innerText = ""; // Clear on call end
             }
         }
     },
@@ -280,26 +277,6 @@ class JanusSIP {
             UI.setCallState(true);
             UI.updateStatus("正在獲取憑證...", "calling");
 
-            // Safari Autoplay
-            const audio = document.getElementById("remote-audio");
-            if (audio) {
-                audio.muted = false;
-                audio.setAttribute('playsinline', 'true');
-
-                if (!audio.srcObject) {
-                    const originalSrc = audio.src;
-                    audio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA== ";
-                    audio.play().then(() => {
-                        console.log("Audio system unlocked for Safari");
-                        audio.src = originalSrc;
-
-                        if (navigator.audioSession) {
-                            navigator.audioSession.type = 'play-and-record';
-                            console.log("Safari audioSession set to play-and-record");
-                        }
-                    }).catch(e => console.warn("Audio unlock failed:", e));
-                }
-            }
 
             const turnCreds = await this.getTurnCredentials();
 
@@ -419,11 +396,6 @@ class JanusSIP {
             onlocalstream: (stream) => {
                 console.log("Got local stream");
                 this.localStream = stream;
-
-                if (navigator.audioSession) {
-                    navigator.audioSession.type = 'play-and-record';
-                    console.log("Local stream acquired, audioSession = play-and-record");
-                }
             },
             onremotestream: (stream) => {
                 if (this.state === AppStatus.CLEANING || this.state === AppStatus.IDLE) return;

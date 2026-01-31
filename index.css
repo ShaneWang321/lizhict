@@ -1,270 +1,278 @@
 :root {
-    --primary-color: #007bff;
-    --primary-hover: #0056b3;
-    --danger-color: #dc3545;
-    --danger-hover: #a71d2a;
-    --success-color: #28a745;
-    --bg-color: #f8f9fa;
-    --text-color: #212529;
-    --card-bg: #ffffff;
-    --border-radius: 12px;
-    --transition: all 0.3s ease;
+    --ios-bg: #1c1c1e;
+    --ios-card-bg: #2c2c2e;
+    --ios-text: #ffffff;
+    --ios-text-secondary: #8e8e93;
+    --ios-green: #34c759;
+    --ios-red: #ff3b30;
+    --ios-gray-btn: #48484a;
+    --ios-gray-btn-hover: #636366;
+    --ios-blue: #0a84ff;
+    --border-radius-full: 50%;
+    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background-color: #000000;
+    color: var(--ios-text);
     margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
 }
 
 .container {
     width: 100%;
-    max-width: 400px;
+    max-width: 440px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     padding: 20px;
-    text-align: center;
-}
-
-.card {
-    background: var(--card-bg);
-    padding: 2rem;
-    border-radius: var(--border-radius);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     position: relative;
-    overflow: hidden;
+    background-color: var(--ios-bg);
 }
 
-h1 {
-    font-size: 1.5rem;
-    margin-bottom: 2rem;
-    font-weight: 600;
+/* Header Section */
+.header {
+    margin-top: 60px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+#app-title {
+    font-size: 2.2rem;
+    font-weight: 400;
+    margin: 0;
+    letter-spacing: -0.5px;
 }
 
 .status-badge {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 1.5rem;
-    background: #e9ecef;
+    font-size: 1rem;
+    color: var(--ios-text-secondary);
+    margin-top: 8px;
+    font-weight: 400;
 }
 
-.status-badge.registered {
-    background: #d4edda;
-    color: #155724;
+#remote-identity {
+    font-size: 1.2rem;
+    margin-top: 10px;
+    color: var(--ios-text);
+    min-height: 1.5rem;
 }
 
-.status-badge.calling {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.status-badge.incall {
-    background: #cce5ff;
-    color: #004085;
-}
-
-.call-btn {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: none;
-    background-color: var(--success-color);
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto;
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-}
-
-.call-btn:hover {
-    transform: scale(1.05);
-}
-
-.call-btn.hanging-up {
-    background-color: var(--danger-color);
-    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-}
-
+/* Settings Trigger */
 .settings-trigger {
     position: absolute;
     top: 20px;
     right: 20px;
-    background: none;
+    background: var(--ios-gray-btn);
     border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
     cursor: pointer;
-    color: #6c757d;
+    z-index: 10;
+    opacity: 0.6;
+}
+
+/* DTMF Display Area */
+.dtmf-display {
+    margin: 20px 0;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+/* Main Keypad Section */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.dtmf-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px 25px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.dtmf-btn {
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--ios-gray-btn);
+    color: white;
+    font-size: 2.2rem;
+    font-weight: 400;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    line-height: 1;
+}
+
+.dtmf-btn small {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-top: 4px;
+    text-transform: uppercase;
+}
+
+.dtmf-btn:active,
+.dtmf-btn.active {
+    background-color: #7c7c7e;
+    transform: scale(0.95);
+}
+
+/* Actions Section */
+.actions {
+    padding-bottom: 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.call-btn {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--ios-green);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     transition: var(--transition);
 }
 
-.settings-trigger:hover {
-    color: var(--primary-color);
-    transform: rotate(45deg);
+.call-btn:active {
+    opacity: 0.8;
+    transform: scale(0.92);
 }
 
-/* Modal Styling */
+.call-btn.hanging-up {
+    background-color: var(--ios-red);
+    transform: rotate(135deg);
+}
+
+.call-btn:disabled {
+    filter: grayscale(1);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.call-btn svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* Modal UI */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.8);
     display: none;
     justify-content: center;
-    align-items: center;
+    align-items: flex-end;
     z-index: 1000;
+    backdrop-filter: blur(10px);
 }
 
 .modal-content {
-    background: white;
-    padding: 2rem;
-    border-radius: var(--border-radius);
-    width: 90%;
+    background: var(--ios-card-bg);
+    width: 100%;
     max-width: 500px;
+    border-radius: 20px 20px 0 0;
+    padding: 30px 20px;
     max-height: 90vh;
     overflow-y: auto;
 }
 
+.modal-content h2 {
+    margin-top: 0;
+    text-align: center;
+}
+
 .form-group {
-    margin-bottom: 1rem;
-    text-align: left;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
     display: block;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: var(--ios-text-secondary);
 }
 
 .form-control {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    box-sizing: border-box;
+    background: var(--ios-gray-btn);
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    color: white;
     font-size: 1rem;
 }
 
-.form-control:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
-
-.modal-actions {
-    margin-top: 1.5rem;
-    display: flex;
-    gap: 1rem;
-}
-
 .btn {
-    flex: 1;
-    padding: 0.75rem;
-    border-radius: 8px;
+    padding: 12px;
+    border-radius: 10px;
     border: none;
-    cursor: pointer;
     font-weight: 600;
-    transition: var(--transition);
+    cursor: pointer;
+    font-size: 1rem;
 }
 
 .btn-primary {
-    background: var(--primary-color);
+    background: var(--ios-blue);
     color: white;
-}
-
-.btn-primary:hover {
-    background: var(--primary-hover);
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: var(--ios-gray-btn);
     color: white;
 }
 
-.btn-secondary:hover {
-    background: #5a6268;
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-actions .btn {
+    flex: 1;
 }
 
 #remote-audio {
     display: none;
-}
-
-/* DTMF Keypad */
-.dtmf-pad {
-    display: none;
-    /* Hidden by default, shown when in call */
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    margin-top: 2rem;
-    max-width: 260px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.dtmf-display {
-    display: none;
-    background: #f1f3f5;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 10px 15px;
-    margin: 1.5rem auto 0;
-    max-width: 260px;
-    min-height: 44px;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--primary-color);
-    letter-spacing: 4px;
-    word-break: break-all;
-    text-align: center;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.dtmf-btn {
-    background: #f1f3f5;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 12px;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #495057;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-@media (hover: hover) {
-    .dtmf-btn:hover {
-        background: #e7f1ff;
-        border-color: #b6d4fe;
-        color: var(--primary-color);
-        transform: translateY(-2px);
-    }
-}
-
-.dtmf-btn.active {
-    background: #b6d4fe !important;
-    border-color: var(--primary-color) !important;
-    transform: scale(0.95);
-    transition: none;
-}
-
-.dtmf-btn small {
-    font-size: 0.65rem;
-    font-weight: 400;
-    color: #adb5bd;
-    margin-top: 2px;
 }
