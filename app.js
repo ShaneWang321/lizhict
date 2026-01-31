@@ -143,6 +143,13 @@ const DTMFToneGenerator = {
         }
     },
 
+    async resume() {
+        if (this.context && this.context.state === 'suspended') {
+            await this.context.resume();
+            console.log("DTMF AudioContext resumed via explicit call");
+        }
+    },
+
     play(digit) {
         if (!this.frequencies[digit]) {
             console.warn("Unknown DTMF digit:", digit);
@@ -375,11 +382,16 @@ class JanusSIP {
                 console.log(`%c[ICE State] ${state}`, "color: blue; font-weight: bold");
                 if (state === "failed") {
                     UI.updateStatus("ICE 連線失敗", "danger");
-                    this.cleanup(true);
+                    // Terminal failure: destroy session to stop server-side audio and release UI
+                    this.cleanup(false);
                 } else if (state === "disconnected") {
-                    // Only log "waiting for reconnection" if we aren't cleaning up
                     if (this.state === AppStatus.IN_CALL) {
                         console.warn("ICE disconnected, waiting for reconnection...");
+                        UI.updateStatus("連線不穩 (重連中)", "calling");
+                    }
+                } else if (state === "connected" || state === "completed") {
+                    if (this.state === AppStatus.IN_CALL) {
+                        UI.updateStatus(this.isRegistered ? "通話中" : "已接聽", "incall");
                     }
                 }
             },
@@ -590,7 +602,10 @@ class JanusSIP {
 
     cleanup(isSoft = false) {
         if (this.state === AppStatus.CLEANING && !isSoft) return;
-        if (this.state === AppStatus.IDLE && !this.janus) return;
+        if (this.state === AppStatus.IDLE && !this.janus) {
+            UI.setCallState(false);
+            return;
+        }
 
         console.log(`Cleaning up (soft: ${isSoft})`);
         if (!isSoft) this.state = AppStatus.CLEANING;
@@ -600,6 +615,26 @@ class JanusSIP {
             this.hangupTimeoutId = null;
         }
 
+        // 1. Force stop remote audio elements and tracks
+        const audio = document.getElementById("remote-audio");
+        if (audio) {
+            console.log("Stopping remote audio and clearing srcObject");
+            try {
+                audio.pause();
+                if (audio.srcObject) {
+                    const tracks = audio.srcObject.getTracks();
+                    tracks.forEach(t => {
+                        t.stop();
+                        console.log("Stopped remote track:", t.id);
+                    });
+                    audio.srcObject = null;
+                }
+            } catch (e) {
+                console.warn("Error cleaning up remote audio element:", e);
+            }
+        }
+
+        // 2. Stop local stream tracks
         if (this.localStream) {
             console.log("Stopping local stream tracks");
             Janus.stopAllTracks(this.localStream);
@@ -609,8 +644,16 @@ class JanusSIP {
         this.isCalling = false;
         this.isRegistered = false;
 
-        // Reset UI immediately to show the "Call" icon but STAY in CLEANING state (Gray/Disabled)
+        // Reset UI immediately
         UI.setCallState(false);
+
+        // Reset AudioSession if on iOS
+        if (navigator.audioSession) {
+            // Set back to 'playback' or 'play-and-record' based on app needs, 
+            // but setting it here helps OS release microphone lock
+            navigator.audioSession.type = 'playback';
+            console.log("Safari audioSession set back to playback");
+        }
 
         // Cooldown timer: 3 seconds before allowing next call
         const cooldownMs = 3000;
@@ -621,27 +664,27 @@ class JanusSIP {
             this.sipHandle = null;
             j.destroy({
                 success: () => {
-                    console.log(`Janus destroyed. Starting ${cooldownMs}ms silent cooldown...`);
+                    console.log(`Janus session destroyed. Starting ${cooldownMs}ms cooldown...`);
                     setTimeout(() => {
                         this.state = AppStatus.IDLE;
                         UI.setCallState(false);
-                        console.log("Cooldown finished, ready for next call.");
+                        console.log("Cooldown finished, ready.");
                     }, cooldownMs);
                 },
                 error: (e) => {
-                    console.error("Error destroying Janus, skipping cooldown:", e);
+                    console.error("Error destroying Janus:", e);
                     this.state = AppStatus.IDLE;
                     UI.setCallState(false);
                 }
             });
         } else if (!isSoft) {
-            console.log(`Direct cleanup. Starting ${cooldownMs}ms silent cooldown...`);
+            console.log(`Direct cleanup. Starting ${cooldownMs}ms cooldown...`);
             setTimeout(() => {
                 this.state = AppStatus.IDLE;
                 UI.setCallState(false);
             }, cooldownMs);
         } else {
-            // isSoft case: Immediate unlock (usually for internal errors)
+            // isSoft case: Immediate unlock
             this.state = AppStatus.IDLE;
             UI.setCallState(false);
         }
@@ -654,6 +697,29 @@ const app = new JanusSIP();
 document.addEventListener("DOMContentLoaded", async () => {
     await app.init();
     UI.populateForm(app.settings);
+
+    // --- Safari Best Practice: Visibility & AudioContext ---
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            console.log("App became visible, checking audio state...");
+            // Resume AudioContext for DTMF if it was suspended by iOS
+            DTMFToneGenerator.resume();
+
+            // If in a call, ensure the remote audio element is still in a healthy state
+            if (app.state === AppStatus.IN_CALL) {
+                const audio = document.getElementById("remote-audio");
+                if (audio && audio.paused && audio.srcObject) {
+                    console.log("Resuming remote audio playback after visibility change");
+                    audio.play().catch(e => console.warn("Failed to resume audio on visibility change:", e));
+                }
+            }
+        }
+    });
+
+    // Handle generic page/user interaction to unlock audio
+    document.addEventListener("click", () => {
+        DTMFToneGenerator.init();
+    }, { once: true });
 
     document.getElementById("open-settings").onclick = () => UI.showModal();
     document.getElementById("close-settings").onclick = () => UI.hideModal();
