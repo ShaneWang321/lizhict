@@ -136,6 +136,14 @@ const DTMFToneGenerator = {
         if (!this.context) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             this.context = new AudioContext();
+            console.log("DTMF AudioContext created");
+
+            // iOS Workaround: Play silence to claim session early during user gesture
+            const buffer = this.context.createBuffer(1, 1, 22050);
+            const source = this.context.createBufferSource();
+            source.buffer = buffer;
+            source.connect(this.context.destination);
+            source.start(0);
         }
         // Resume context if suspended (browser policy)
         if (this.context.state === 'suspended') {
@@ -701,7 +709,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("open-settings").onclick = () => UI.showModal();
     document.getElementById("close-settings").onclick = () => UI.hideModal();
-    UI.callBtn.onclick = () => app.start();
+    UI.callBtn.onclick = () => {
+        // iOS Fix: Warm up DTMF AudioContext on first user gesture (Call button)
+        // to prevent it from hijacking/interupting WebRTC audio later.
+        DTMFToneGenerator.init();
+        app.start();
+    };
 
     // Secret trigger for settings (Title)
     UI.title.onclick = () => {
