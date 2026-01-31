@@ -53,6 +53,7 @@ const UI = {
     form: document.getElementById("settings-form"),
     gear: document.getElementById("open-settings"),
     title: document.getElementById("app-title"),
+    dtmfDisplay: document.getElementById("dtmf-display"),
 
     updateStatus(text, className = "") {
         this.statusBadge.innerText = text;
@@ -84,7 +85,12 @@ const UI = {
         const dtmfPad = document.getElementById("dtmf-pad");
         if (dtmfPad) {
             // Only show DTMF when actually IN_CALL
-            dtmfPad.style.display = (isInCall && state === AppStatus.IN_CALL) ? "grid" : "none";
+            const show = (isInCall && state === AppStatus.IN_CALL);
+            dtmfPad.style.display = show ? "grid" : "none";
+            if (this.dtmfDisplay) {
+                this.dtmfDisplay.style.display = show ? "block" : "none";
+                if (!show) this.dtmfDisplay.innerText = ""; // Clear on call end
+            }
         }
     },
 
@@ -747,6 +753,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     dtmfButtons.forEach(btn => {
         btn.onclick = () => {
             const digit = btn.getAttribute("data-digit");
+            // Add visual feedback
+            if (UI.dtmfDisplay) {
+                UI.dtmfDisplay.innerText += digit;
+            }
             // // Play local sound
             // DTMFToneGenerator.play(digit);
             // Send DTMF via SIP
