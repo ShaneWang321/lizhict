@@ -753,12 +753,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     dtmfButtons.forEach(btn => {
         btn.onclick = () => {
             const digit = btn.getAttribute("data-digit");
-            // Add visual feedback
+
+            // Mobile Fix: Timer-based visual feedback
+            btn.classList.add("active");
+            setTimeout(() => btn.classList.remove("active"), 200);
+
+            // Add to display box
             if (UI.dtmfDisplay) {
                 UI.dtmfDisplay.innerText += digit;
             }
-            // // Play local sound
-            // DTMFToneGenerator.play(digit);
             // Send DTMF via SIP
             app.sendDTMF(digit);
         };

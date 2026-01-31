@@ -246,16 +246,20 @@ h1 {
     justify-content: center;
 }
 
-.dtmf-btn:hover {
-    background: #e7f1ff;
-    border-color: #b6d4fe;
-    color: var(--primary-color);
-    transform: translateY(-2px);
+@media (hover: hover) {
+    .dtmf-btn:hover {
+        background: #e7f1ff;
+        border-color: #b6d4fe;
+        color: var(--primary-color);
+        transform: translateY(-2px);
+    }
 }
 
-.dtmf-btn:active {
-    background: #b6d4fe;
-    transform: translateY(0);
+.dtmf-btn.active {
+    background: #b6d4fe !important;
+    border-color: var(--primary-color) !important;
+    transform: scale(0.95);
+    transition: none;
 }
 
 .dtmf-btn small {
