@@ -1,5 +1,5 @@
 :root {
-    --ios-bg: #1c1c1e;
+    --ios-bg: #000000;
     --ios-card-bg: #2c2c2e;
     --ios-text: #ffffff;
     --ios-text-secondary: #8e8e93;
@@ -153,9 +153,11 @@ body {
 
 /* Actions Section */
 .actions {
-    padding-bottom: 40px;
+    padding-bottom: 60px;
+    margin-top: 40px;
     display: flex;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .call-btn {
