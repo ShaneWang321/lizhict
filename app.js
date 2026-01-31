@@ -122,86 +122,86 @@ const UI = {
     }
 };
 
-// --- DTMF Tone Generator (Web Audio API) ---
-const DTMFToneGenerator = {
-    context: null,
-    frequencies: {
-        "1": [697, 1209], "2": [697, 1336], "3": [697, 1477], "A": [697, 1633],
-        "4": [770, 1209], "5": [770, 1336], "6": [770, 1477], "B": [770, 1633],
-        "7": [852, 1209], "8": [852, 1336], "9": [852, 1477], "C": [852, 1633],
-        "*": [941, 1209], "0": [941, 1336], "#": [941, 1477], "D": [941, 1633]
-    },
+// // --- DTMF Tone Generator (Web Audio API) ---
+// const DTMFToneGenerator = {
+//     context: null,
+//     frequencies: {
+//         "1": [697, 1209], "2": [697, 1336], "3": [697, 1477], "A": [697, 1633],
+//         "4": [770, 1209], "5": [770, 1336], "6": [770, 1477], "B": [770, 1633],
+//         "7": [852, 1209], "8": [852, 1336], "9": [852, 1477], "C": [852, 1633],
+//         "*": [941, 1209], "0": [941, 1336], "#": [941, 1477], "D": [941, 1633]
+//     },
 
-    init() {
-        if (!this.context) {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            this.context = new AudioContext();
-            console.log("DTMF AudioContext created");
+//     init() {
+//         if (!this.context) {
+//             const AudioContext = window.AudioContext || window.webkitAudioContext;
+//             this.context = new AudioContext();
+//             console.log("DTMF AudioContext created");
 
-            // iOS Workaround: Play silence to claim session early during user gesture
-            const buffer = this.context.createBuffer(1, 1, 22050);
-            const source = this.context.createBufferSource();
-            source.buffer = buffer;
-            source.connect(this.context.destination);
-            source.start(0);
-        }
-        // Resume context if suspended (browser policy)
-        if (this.context.state === 'suspended') {
-            this.context.resume().then(() => console.log("DTMF AudioContext resumed"));
-        }
-    },
+//             // iOS Workaround: Play silence to claim session early during user gesture
+//             const buffer = this.context.createBuffer(1, 1, 22050);
+//             const source = this.context.createBufferSource();
+//             source.buffer = buffer;
+//             source.connect(this.context.destination);
+//             source.start(0);
+//         }
+//         // Resume context if suspended (browser policy)
+//         if (this.context.state === 'suspended') {
+//             this.context.resume().then(() => console.log("DTMF AudioContext resumed"));
+//         }
+//     },
 
-    play(digit) {
-        if (!this.frequencies[digit]) {
-            console.warn("Unknown DTMF digit:", digit);
-            return;
-        }
+//     play(digit) {
+//         if (!this.frequencies[digit]) {
+//             console.warn("Unknown DTMF digit:", digit);
+//             return;
+//         }
 
-        try {
-            this.init();
-            console.log("Playing DTMF Tone for:", digit);
+//         try {
+//             this.init();
+//             console.log("Playing DTMF Tone for:", digit);
 
-            const [lowFreq, highFreq] = this.frequencies[digit];
-            const ctx = this.context;
-            const currentTime = ctx.currentTime;
-            const duration = 0.2; // 200ms
+//             const [lowFreq, highFreq] = this.frequencies[digit];
+//             const ctx = this.context;
+//             const currentTime = ctx.currentTime;
+//             const duration = 0.2; // 200ms
 
-            // Oscillator 1 (Low Frequency)
-            const osc1 = ctx.createOscillator();
-            osc1.frequency.value = lowFreq;
-            osc1.type = "sine";
+//             // Oscillator 1 (Low Frequency)
+//             const osc1 = ctx.createOscillator();
+//             osc1.frequency.value = lowFreq;
+//             osc1.type = "sine";
 
-            // Oscillator 2 (High Frequency)
-            const osc2 = ctx.createOscillator();
-            osc2.frequency.value = highFreq;
-            osc2.type = "sine";
+//             // Oscillator 2 (High Frequency)
+//             const osc2 = ctx.createOscillator();
+//             osc2.frequency.value = highFreq;
+//             osc2.type = "sine";
 
-            // Gain Node (Volume Control)
-            const gainNode = ctx.createGain();
-            // Start at 0 to avoid pop
-            gainNode.gain.setValueAtTime(0, currentTime);
-            // Attack to 0.3 (louder)
-            gainNode.gain.linearRampToValueAtTime(0.3, currentTime + 0.01);
-            // Sustain
-            gainNode.gain.setValueAtTime(0.3, currentTime + duration - 0.01);
-            // Release to 0
-            gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
+//             // Gain Node (Volume Control)
+//             const gainNode = ctx.createGain();
+//             // Start at 0 to avoid pop
+//             gainNode.gain.setValueAtTime(0, currentTime);
+//             // Attack to 0.3 (louder)
+//             gainNode.gain.linearRampToValueAtTime(0.3, currentTime + 0.01);
+//             // Sustain
+//             gainNode.gain.setValueAtTime(0.3, currentTime + duration - 0.01);
+//             // Release to 0
+//             gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
 
-            // Connect graph
-            osc1.connect(gainNode);
-            osc2.connect(gainNode);
-            gainNode.connect(ctx.destination);
+//             // Connect graph
+//             osc1.connect(gainNode);
+//             osc2.connect(gainNode);
+//             gainNode.connect(ctx.destination);
 
-            // Start and Stop
-            osc1.start(currentTime);
-            osc2.start(currentTime);
-            osc1.stop(currentTime + duration);
-            osc2.stop(currentTime + duration);
-        } catch (e) {
-            console.error("Error generating DTMF tone:", e);
-        }
-    }
-};
+//             // Start and Stop
+//             osc1.start(currentTime);
+//             osc2.start(currentTime);
+//             osc1.stop(currentTime + duration);
+//             osc2.stop(currentTime + duration);
+//         } catch (e) {
+//             console.error("Error generating DTMF tone:", e);
+//         }
+//     }
+// };
 
 // --- App States ---
 const AppStatus = {
@@ -709,12 +709,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("open-settings").onclick = () => UI.showModal();
     document.getElementById("close-settings").onclick = () => UI.hideModal();
-    UI.callBtn.onclick = () => {
-        // iOS Fix: Warm up DTMF AudioContext on first user gesture (Call button)
-        // to prevent it from hijacking/interupting WebRTC audio later.
-        DTMFToneGenerator.init();
-        app.start();
-    };
+    UI.callBtn.onclick = () => app.start();
 
     // Secret trigger for settings (Title)
     UI.title.onclick = () => {
@@ -748,13 +743,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         UI.updateStatus("設定已儲存");
     };
 
-    // DTMF Keypad listeners
     const dtmfButtons = document.querySelectorAll(".dtmf-btn");
     dtmfButtons.forEach(btn => {
         btn.onclick = () => {
             const digit = btn.getAttribute("data-digit");
-            // Play local sound
-            DTMFToneGenerator.play(digit);
+            // // Play local sound
+            // DTMFToneGenerator.play(digit);
             // Send DTMF via SIP
             app.sendDTMF(digit);
         };
