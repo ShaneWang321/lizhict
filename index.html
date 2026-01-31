@@ -3,40 +3,53 @@
 
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Web Call</title>
 	<link rel="stylesheet" href="index.css">
+	<!-- Janus dependencies -->
 	<script src="adapter.min.js"></script>
 	<script src="janus.js"></script>
 </head>
 
 <body>
 	<div class="container">
-		<!-- Settings Trigger -->
-		<button class="settings-trigger" id="open-settings" aria-label="Settings" style="display: none;">
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-				stroke-linejoin="round">
-				<circle cx="12" cy="12" r="3"></circle>
-				<path
-					d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-				</path>
-			</svg>
-		</button>
+		<div class="card">
+			<button class="settings-trigger" id="open-settings" aria-label="Settings" style="display: none;">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+					stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="3"></circle>
+					<path
+						d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+					</path>
+				</svg>
+			</button>
 
-		<!-- Header: Identity and Status -->
-		<header class="header">
-			<!-- <h1 id="app-title">Web Call</h1> -->
-			<div id="status" class="status-badge" style="display: none;">未連接</div>
-			<p id="remote-identity"></p>
-		</header>
+			<h1 id="app-title" style="cursor: pointer; user-select: none;">Web Call</h1>
 
-		<!-- Main Display Area: DTMF digits shown here -->
-		<div id="dtmf-display" class="dtmf-display"></div>
+			<div id="status" class="status-badge" style="cursor: pointer; user-select: none; display: none;">未連接</div>
 
-		<!-- Middle: Keypad (conditionally shown in JS) -->
-		<main class="main-content">
-			<div id="dtmf-pad" class="dtmf-pad" style="display: none;">
-				<button class="dtmf-btn" data-digit="1">1<small>&nbsp;</small></button>
+			<div class="call-area">
+				<button id="call-btn" class="call-btn" title="Dial/Hangup">
+					<svg id="icon-call" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+						stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path
+							d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+						</path>
+					</svg>
+					<svg id="icon-hangup" class="hidden" style="display:none" width="32" height="32" viewBox="0 0 24 24"
+						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+						stroke-linejoin="round">
+						<path
+							d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.62A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91">
+						</path>
+						<line x1="23" y1="1" x2="1" y2="23"></line>
+					</svg>
+				</button>
+			</div>
+
+			<div id="dtmf-display" class="dtmf-display"></div>
+			<div id="dtmf-pad" class="dtmf-pad">
+				<button class="dtmf-btn" data-digit="1">1</button>
 				<button class="dtmf-btn" data-digit="2">2<small>ABC</small></button>
 				<button class="dtmf-btn" data-digit="3">3<small>DEF</small></button>
 				<button class="dtmf-btn" data-digit="4">4<small>GHI</small></button>
@@ -45,27 +58,13 @@
 				<button class="dtmf-btn" data-digit="7">7<small>PQRS</small></button>
 				<button class="dtmf-btn" data-digit="8">8<small>TUV</small></button>
 				<button class="dtmf-btn" data-digit="9">9<small>WXYZ</small></button>
-				<button class="dtmf-btn" data-digit="*">*<small>&nbsp;</small></button>
-				<button class="dtmf-btn" data-digit="0">0<small>+</small></button>
-				<button class="dtmf-btn" data-digit="#">#<small>&nbsp;</small></button>
+				<button class="dtmf-btn" data-digit="*">*</button>
+				<button class="dtmf-btn" data-digit="0">0</button>
+				<button class="dtmf-btn" data-digit="#">#</button>
 			</div>
-		</main>
 
-		<!-- Footer: Action Buttons -->
-		<footer class="actions">
-			<button id="call-btn" class="call-btn" title="Dial/Hangup">
-				<svg id="icon-call" viewBox="0 0 24 24" fill="currentColor">
-					<path
-						d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
-					</path>
-				</svg>
-				<svg id="icon-hangup" style="display:none" viewBox="0 0 24 24" fill="currentColor">
-					<path
-						d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
-					</path>
-				</svg>
-			</button>
-		</footer>
+			<p id="remote-identity" style="margin-top: 1rem; font-size: 0.9rem; color: #6c757d;"></p>
+		</div>
 	</div>
 
 	<!-- Settings Modal -->
@@ -78,34 +77,65 @@
 					<input type="text" id="cfg-janusServer" class="form-control"
 						placeholder="https://www.vas.com.tw/janus">
 				</div>
-				<div class="form-group">
-					<label>User ID</label>
+
+				<div class="form-group"
+					style="background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px dashed #ced4da; margin-bottom: 1.5rem;">
+					<label style="font-weight: bold; color: #495057;">User ID (自動代管模式)</label>
 					<input type="text" id="cfg-userID" class="form-control" placeholder="輸入 ID">
 				</div>
+
 				<div style="display: none;">
-					<input type="text" id="cfg-sipRegistrar" class="form-control">
-					<input type="text" id="cfg-sipIdentity" class="form-control">
-					<input type="text" id="cfg-authUser" class="form-control">
-					<input type="password" id="cfg-sipPassword" class="form-control">
-					<input type="text" id="cfg-displayName" class="form-control">
-					<input type="text" id="cfg-callee" class="form-control">
+					<div class="form-group">
+						<label>SIP Registrar</label>
+						<input type="text" id="cfg-sipRegistrar" class="form-control">
+					</div>
+
+					<div class="form-group">
+						<label>SIP Identity</label>
+						<input type="text" id="cfg-sipIdentity" class="form-control">
+					</div>
+
+					<div class="form-group">
+						<label>Username</label>
+						<input type="text" id="cfg-authUser" class="form-control" autocomplete="username">
+					</div>
+
+					<div class="form-group">
+						<label>Secret</label>
+						<input type="password" id="cfg-sipPassword" class="form-control"
+							autocomplete="current-password">
+					</div>
+
+					<div class="form-group">
+						<label>Display Name</label>
+						<input type="text" id="cfg-displayName" class="form-control">
+					</div>
+
+					<div class="form-group">
+						<label>Callee</label>
+						<input type="text" id="cfg-callee" class="form-control">
+					</div>
 				</div>
 				<div class="form-group">
 					<label>TURN Auth API</label>
-					<input type="text" id="cfg-turnAuthApi" class="form-control">
+					<input type="text" id="cfg-turnAuthApi" class="form-control"
+						placeholder="https://api.example.com/turn">
 				</div>
 				<div class="form-group">
 					<label>SIP Proxy API</label>
-					<input type="text" id="cfg-sipProxyApi" class="form-control">
+					<input type="text" id="cfg-sipProxyApi" class="form-control"
+						placeholder="https://api.example.com/proxy">
 				</div>
 				<div class="form-group">
 					<label>TURN Server List</label>
-					<input type="text" id="cfg-turnUrls" class="form-control">
+					<input type="text" id="cfg-turnUrls" class="form-control"
+						placeholder='["turn:www.vas.com.tw:3478?transport=udp"]'>
 				</div>
 				<div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
 					<input type="checkbox" id="cfg-forceTurn" style="width: auto;">
 					<label style="margin: 0;">強制使用 TURN Relay</label>
 				</div>
+
 				<div class="modal-actions">
 					<button type="button" class="btn btn-secondary" id="close-settings">關閉</button>
 					<button type="submit" class="btn btn-primary">儲存並應用</button>
@@ -115,6 +145,7 @@
 	</div>
 
 	<audio id="remote-audio" autoplay playsinline></audio>
+
 	<script src="app.js"></script>
 </body>
 
