@@ -88,7 +88,7 @@ const UI = {
             const show = (isInCall && (state === AppStatus.IN_CALL || this.statusBadge.innerText.includes("Progress")));
             dtmfPad.style.display = show ? "grid" : "none";
             if (this.dtmfDisplay) {
-                this.dtmfDisplay.style.display = show ? "block" : "none";
+                this.dtmfDisplay.style.display = show ? "flex" : "none";
                 if (!show) this.dtmfDisplay.innerText = ""; // Clear on call end
             }
         }
