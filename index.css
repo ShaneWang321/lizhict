@@ -229,13 +229,13 @@ h1 {
 }
 
 .dtmf-btn:hover {
-    background: #e9ecef;
+    background: #2a7dd0;
     border-color: #2a7dd0;
     transform: translateY(-2px);
 }
 
 .dtmf-btn:active {
-    background: #dee2e6;
+    background: #2a7dd0;
     transform: translateY(0);
 }
 
