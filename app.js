@@ -143,13 +143,6 @@ const DTMFToneGenerator = {
         }
     },
 
-    async resume() {
-        if (this.context && this.context.state === 'suspended') {
-            await this.context.resume();
-            console.log("DTMF AudioContext resumed via explicit call");
-        }
-    },
-
     play(digit) {
         if (!this.frequencies[digit]) {
             console.warn("Unknown DTMF digit:", digit);
@@ -228,6 +221,10 @@ class JanusSIP {
         this.state = AppStatus.IDLE;
         this.hangupTimeoutId = null;
         this.clickCount = 0;
+
+        // Safari ICE Restart state
+        this.isIceRestarting = false;
+        this.iceRestartDebounceTimer = null;
     }
 
     async getTurnCredentials() {
@@ -380,19 +377,25 @@ class JanusSIP {
                     return;
                 }
                 console.log(`%c[ICE State] ${state}`, "color: blue; font-weight: bold");
-                if (state === "failed") {
-                    UI.updateStatus("ICE 連線失敗", "danger");
-                    // Terminal failure: destroy session to stop server-side audio and release UI
-                    this.cleanup(false);
-                } else if (state === "disconnected") {
+
+                if (state === "failed" || state === "disconnected") {
                     if (this.state === AppStatus.IN_CALL) {
-                        console.warn("ICE disconnected, waiting for reconnection...");
-                        UI.updateStatus("連線不穩 (重連中)", "calling");
+                        if (this.iceRestartDebounceTimer) clearTimeout(this.iceRestartDebounceTimer);
+                        this.iceRestartDebounceTimer = setTimeout(() => {
+                            console.warn(`[SIP] Connection appears unstable (${state}). Attempting ICE Restart...`);
+                            this.restartIce();
+                        }, 1500);
+                    } else if (state === "failed") {
+                        UI.updateStatus("ICE 連線失敗", "danger");
+                        this.cleanup(true);
                     }
                 } else if (state === "connected" || state === "completed") {
-                    if (this.state === AppStatus.IN_CALL) {
-                        UI.updateStatus(this.isRegistered ? "通話中" : "已接聽", "incall");
+                    // Reset restart state on successful connection
+                    if (this.iceRestartDebounceTimer) {
+                        clearTimeout(this.iceRestartDebounceTimer);
+                        this.iceRestartDebounceTimer = null;
                     }
+                    this.isIceRestarting = false;
                 }
             },
             onmessage: (msg, jsep) => {
@@ -413,8 +416,9 @@ class JanusSIP {
                 console.log("Got remote stream");
                 const audio = document.getElementById("remote-audio");
 
-                if (audio.srcObject !== stream) {
+                if (audio && audio.srcObject !== stream) {
                     audio.muted = false;
+                    audio.setAttribute('playsinline', 'true');
                     Janus.attachMediaStream(audio, stream);
                     setTimeout(() => {
                         audio.play().then(() => {
@@ -426,7 +430,7 @@ class JanusSIP {
                             }
                         }).catch(e => {
                             if (e.name !== "AbortError") {
-                                console.error("Error playing remote audio:", e);
+                                console.warn("[SIP] Remote audio auto-play failed. User interaction might be needed.", e);
                             }
                         });
                     }, 150);
@@ -564,6 +568,34 @@ class JanusSIP {
         });
     }
 
+    restartIce() {
+        if (this.state !== AppStatus.IN_CALL || !this.sipHandle || this.isIceRestarting) {
+            console.warn("[SIP] Skipping ICE restart: Invalid state or already restarting.");
+            return;
+        }
+
+        console.log("[SIP] Initiating ICE restart sequence for Safari...");
+        this.isIceRestarting = true;
+
+        this.sipHandle.createOffer({
+            iceRestart: true,
+            media: { audio: true, video: false },
+            success: (jsep) => {
+                console.log("[SIP] ICE restart offer created. Sending 'update' request...");
+                this.sipHandle.send({
+                    message: { request: "update" },
+                    jsep: jsep
+                });
+                // Safety release after 5s
+                setTimeout(() => { this.isIceRestarting = false; }, 5000);
+            },
+            error: (error) => {
+                console.error("[SIP] ICE restart offer failed:", error);
+                this.isIceRestarting = false;
+            }
+        });
+    }
+
     hangup() {
         if (this.state === AppStatus.CLEANING || this.state === AppStatus.IDLE) return;
 
@@ -602,10 +634,7 @@ class JanusSIP {
 
     cleanup(isSoft = false) {
         if (this.state === AppStatus.CLEANING && !isSoft) return;
-        if (this.state === AppStatus.IDLE && !this.janus) {
-            UI.setCallState(false);
-            return;
-        }
+        if (this.state === AppStatus.IDLE && !this.janus) return;
 
         console.log(`Cleaning up (soft: ${isSoft})`);
         if (!isSoft) this.state = AppStatus.CLEANING;
@@ -615,26 +644,6 @@ class JanusSIP {
             this.hangupTimeoutId = null;
         }
 
-        // 1. Force stop remote audio elements and tracks
-        const audio = document.getElementById("remote-audio");
-        if (audio) {
-            console.log("Stopping remote audio and clearing srcObject");
-            try {
-                audio.pause();
-                if (audio.srcObject) {
-                    const tracks = audio.srcObject.getTracks();
-                    tracks.forEach(t => {
-                        t.stop();
-                        console.log("Stopped remote track:", t.id);
-                    });
-                    audio.srcObject = null;
-                }
-            } catch (e) {
-                console.warn("Error cleaning up remote audio element:", e);
-            }
-        }
-
-        // 2. Stop local stream tracks
         if (this.localStream) {
             console.log("Stopping local stream tracks");
             Janus.stopAllTracks(this.localStream);
@@ -644,16 +653,8 @@ class JanusSIP {
         this.isCalling = false;
         this.isRegistered = false;
 
-        // Reset UI immediately
+        // Reset UI immediately to show the "Call" icon but STAY in CLEANING state (Gray/Disabled)
         UI.setCallState(false);
-
-        // Reset AudioSession if on iOS
-        if (navigator.audioSession) {
-            // Set back to 'playback' or 'play-and-record' based on app needs, 
-            // but setting it here helps OS release microphone lock
-            navigator.audioSession.type = 'playback';
-            console.log("Safari audioSession set back to playback");
-        }
 
         // Cooldown timer: 3 seconds before allowing next call
         const cooldownMs = 3000;
@@ -664,27 +665,27 @@ class JanusSIP {
             this.sipHandle = null;
             j.destroy({
                 success: () => {
-                    console.log(`Janus session destroyed. Starting ${cooldownMs}ms cooldown...`);
+                    console.log(`Janus destroyed. Starting ${cooldownMs}ms silent cooldown...`);
                     setTimeout(() => {
                         this.state = AppStatus.IDLE;
                         UI.setCallState(false);
-                        console.log("Cooldown finished, ready.");
+                        console.log("Cooldown finished, ready for next call.");
                     }, cooldownMs);
                 },
                 error: (e) => {
-                    console.error("Error destroying Janus:", e);
+                    console.error("Error destroying Janus, skipping cooldown:", e);
                     this.state = AppStatus.IDLE;
                     UI.setCallState(false);
                 }
             });
         } else if (!isSoft) {
-            console.log(`Direct cleanup. Starting ${cooldownMs}ms cooldown...`);
+            console.log(`Direct cleanup. Starting ${cooldownMs}ms silent cooldown...`);
             setTimeout(() => {
                 this.state = AppStatus.IDLE;
                 UI.setCallState(false);
             }, cooldownMs);
         } else {
-            // isSoft case: Immediate unlock
+            // isSoft case: Immediate unlock (usually for internal errors)
             this.state = AppStatus.IDLE;
             UI.setCallState(false);
         }
@@ -697,29 +698,6 @@ const app = new JanusSIP();
 document.addEventListener("DOMContentLoaded", async () => {
     await app.init();
     UI.populateForm(app.settings);
-
-    // --- Safari Best Practice: Visibility & AudioContext ---
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") {
-            console.log("App became visible, checking audio state...");
-            // Resume AudioContext for DTMF if it was suspended by iOS
-            DTMFToneGenerator.resume();
-
-            // If in a call, ensure the remote audio element is still in a healthy state
-            if (app.state === AppStatus.IN_CALL) {
-                const audio = document.getElementById("remote-audio");
-                if (audio && audio.paused && audio.srcObject) {
-                    console.log("Resuming remote audio playback after visibility change");
-                    audio.play().catch(e => console.warn("Failed to resume audio on visibility change:", e));
-                }
-            }
-        }
-    });
-
-    // Handle generic page/user interaction to unlock audio
-    document.addEventListener("click", () => {
-        DTMFToneGenerator.init();
-    }, { once: true });
 
     document.getElementById("open-settings").onclick = () => UI.showModal();
     document.getElementById("close-settings").onclick = () => UI.hideModal();
