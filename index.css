@@ -202,7 +202,8 @@ h1 {
 
 /* DTMF Keypad */
 .dtmf-pad {
-    display: none; /* Hidden by default, shown when in call */
+    display: none;
+    /* Hidden by default, shown when in call */
     grid-template-columns: repeat(3, 1fr);
     gap: 15px;
     margin-top: 2rem;
@@ -229,7 +230,7 @@ h1 {
 
 .dtmf-btn:hover {
     background: #e9ecef;
-    border-color: #ced4da;
+    border-color: #2a7dd0;
     transform: translateY(-2px);
 }
 
